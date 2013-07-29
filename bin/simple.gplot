@@ -1,0 +1,10 @@
+set key outside
+set xlabel "Time to recache"
+set ylabel "Number of replacements"
+set autoscale
+set terminal png
+set datafile separator ","
+set output "TRACE"
+plot "FILES" using 1:2:3 with yerrorbars title "STDEV", \
+"FILES" using 1:2 with lines title "AVG"
+
