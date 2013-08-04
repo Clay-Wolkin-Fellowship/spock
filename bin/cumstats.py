@@ -9,6 +9,7 @@ def avgdev(xs):
 
 xs = None
 for line in stdin:
+	if "total" in line: continue
 	num, nxs = line.split(":")
 	nxs = nxs.strip()
 	nxs = [int(x) for x in nxs.split()]

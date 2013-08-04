@@ -14,6 +14,7 @@ input  = args[0]
 output = args[1]
 
 counts = []
+misses = []
 access = {}
 stage = "WARMUP"
 snum = 0
@@ -30,6 +31,7 @@ with open(input,"r") as input:
 		if stage == "WARMUP":
 			if snum == opts.warmup:
 				counts.append({})
+				misses.append(0)
 				access = {}
 				snum = 0
 				stage = "SAMPLE"
@@ -40,6 +42,8 @@ with open(input,"r") as input:
 			if addr in access:
 				ttr = i - access[addr]
 				counts[-1][ttr] = counts[-1].get(ttr,0) + 1
+			elif stage == "SAMPLE":
+				misses[-1] += 1
 			if stage == "COOLDOWN":
 				if victim in access:
 					del access[victim]
@@ -55,6 +59,8 @@ with open(input,"r") as input:
 sumcounts = ((i,[c.get(i,0) for c in counts]) for i in range(opts.cooldown) if any(i in c for c in counts))
 
 with open(output,"w") as output:
+	print("total: %s" % " ".join(str(m) for m in misses),file=output)
 	for i,item in sumcounts:
 		print("%d: %s" % (i, " ".join(str(it) for it in item)), file=output)
+
 
