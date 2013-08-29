@@ -33,10 +33,10 @@ line_re = re.compile(r'0x(?P<instr>[0-9a-fA]*): (?P<type>[RW]) 0x(?P<addr>[0-9a-
 (options, args) = parser.parse_args()
 
 # the first argument is the trace file to read
-input  = sys.stdin if args[0] == "-" else open(args[0],"r")
+input  = open(args[0],"r")
 
 # the second argument is the output file
-output = sys.stdout if args[1] == "-" else open(args[1],"w")
+output = open(args[1],"w")
 
 
 # the number of sets equals 2^(# of index bits)

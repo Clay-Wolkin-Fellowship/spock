@@ -13,13 +13,14 @@ L1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
 BSIZE  := $(shell dc --expression="$(SAMP) $(BUCKETS) / p")
 
 # Trace to use
-TRACES  = $(patsubst raw/%.mtrace,%,$(wildcard raw/*.mtrace))
+TRACES  = is_omp lu_omp dc_omp sp_omp # $(patsubst raw/%.mtrace,%,$(wildcard raw/*.mtrace))
 ifeq ($(strip $(TRACES)),)
 	TRACES = $(patsubst zip/%.zmtrace,%,$(wildcard zip/*.zmtrace))
 endif
-REPS    = rand
+REPS    = rand fifo belady lru mru
 
 ZTRACES = $(TRACES:%=zip/%.zmtrace)
+ZAMPLES = $(TRACES:%=build/zamp/%.zmtrace)
 SAMPLES = $(TRACES:%=build/samp/%.mtrace)
 L1CACHE = $(foreach rep,$(REPS),$(TRACES:%=build/l1/%.$(rep)))
 L1MATRS = $(foreach rep,$(REPS),$(TRACES:%=build/matr1/%.$(rep)))
@@ -33,32 +34,39 @@ TRACE   = $(basename $(basename $(@F)))
 REPL	= $(patsubst .%,%,$(suffix $(@F)))
 RAW     = raw/$(TRACE).mtrace
 ZIP     = zip/$(TRACE).zmtrace
+ZAMPLE  = build/zamp/$(TRACE).zmtrace
 SAMPLE  = build/samp/$(TRACE).mtrace
 L1	= build/l1/$(@F)
 L1MATR  = build/matr1/$(@F)
 L1CUM   = build/matrc1/$(basename $(@F))
 L1BUC	= build/matrb1/$(basename $(@F))
+L1CBEL  = build/matrc1/$(TRACE).belady
+L1BBEL  = build/matrb1/$(TRACE).belady
 
-
-.SECONDARY:
 .SECONDEXPANSION:
+.PRECIOUS: $(ZTRACES)
 
 all: $(L1PLOTS)
 
 clean:
 	rm -rf build
 
-$(ZTRACES): $$(RAW) bin/zip.sh
-	@mkdir -p $(@D)
-	bin/zip.sh $(TRACE)
+# $(ZTRACES): $$(RAW) bin/zip.sh
+#	@mkdir -p $(@D)
+#	bin/zip.sh $(TRACE)
 
-$(SAMPLES): $$(ZIP) build/bin/sample conf/sample.config
+$(ZAMPLES): $$(ZIP) build/bin/sample conf/sample.config
 	@mkdir -p $(@D)
 	build/bin/sample $< $(SAMPN) $(SAMPK) >$@
 
-$(L1CACHE): $$(SAMPLE) rep/$$(REPL).py build/bin/uncompress conf/l1.config
+$(SAMPLES): $$(ZAMPLE) build/bin/uncompress
 	@mkdir -p $(@D)
-	build/bin/uncompress <$< | python3 rep/$(REPL).py $(L1ARGS) - $@
+	build/bin/uncompress <$< >$@
+	
+
+$(L1CACHE): $$(SAMPLE) rep/$$(REPL).py conf/l1.config
+	@mkdir -p $(@D)
+	python3 rep/$(REPL).py $(L1ARGS) $(SAMPLE) $@
 
 $(L1MATRS): $$(L1) bin/matr.py conf/sample.config
 	@mkdir -p $(@D)
@@ -72,13 +80,13 @@ $(L1MATRB): $$(L1MATR) bin/bucketstats.py conf/bucket.config
 	@mkdir -p $(@D)
 	bin/bucketstats.py <$< >$@ $(BSIZE)
 
-$(L1CPLOT): $$(L1CUM) bin/simple.gplot
+$(L1CPLOT): $$(L1CUM) $$(L1CBEL) bin/simple.gplot
 	@mkdir -p $(@D)
-	sed 's|TRACE|$@|' bin/simple.gplot | sed 's|FILES|$<|' | gnuplot -persist
+	sed 's|TRACE|$@|' bin/simple.gplot | sed 's|FILES|$<|' | sed 's|BELADYF|$(L1CBEL)|' | gnuplot -persist
 
-$(L1BPLOT): $$(L1BUC) bin/simple.gplot
+$(L1BPLOT): $$(L1BUC) $$(L1BBEL) bin/simple.gplot
 	@mkdir -p $(@D)
-	sed 's|TRACE|$@|' bin/simple.gplot | sed 's|FILES|$<|' | gnuplot -persist
+	sed 's|TRACE|$@|' bin/simple.gplot | sed 's|FILES|$<|' | sed 's|BELADYF|$(L1BBEL)|' | gnuplot -persist
 
 bin/zip.sh: build/bin/compress
 

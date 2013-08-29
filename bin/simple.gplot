@@ -6,5 +6,6 @@ set terminal png
 set datafile separator ","
 set output "TRACE"
 plot "FILES" using 1:2:3 with yerrorbars title "STDEV", \
-"FILES" using 1:2 with lines title "AVG"
-
+"FILES" using 1:2 with lines title "AVG", \
+"BELADYF" using 1:2:3 with yerrorbars title "BELADY-STDEV", \
+"BELADYF" using 1:2 with lines title "BELADY-AVG"

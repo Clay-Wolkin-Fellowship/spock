@@ -14,7 +14,7 @@ parser.add_option("-w", "--ways"  , action="store", dest="ways"  , type=int, def
 
 (options, args) = parser.parse_args()
 try:
-	sl = subprocess.Popen("sl", shell=True)
+#	sl = subprocess.Popen("sl", shell=True)
 	line_re = re.compile(r'0x(?P<instr>[0-9a-f]*): (?P<type>[RW]) 0x(?P<addr>[0-9a-f]*)')
 
 	ochars = len("%x" % ((1 << options.offset) - 1))
@@ -27,8 +27,8 @@ try:
 	access = {}
 
 	for i, line in enumerate(input):
-		if sl.poll() is not None:
-			sl = subprocess.Popen("sl", shell=True)
+#		if sl.poll() is not None:
+#			sl = subprocess.Popen("sl", shell=True)
 		parsed = line_re.match(line)
 		if not parsed:
 			continue
@@ -60,8 +60,8 @@ try:
 	victim  = " 0x%%0%dx:%%0%dx" % (tchars, ichars)
 
 	for line in input:
-		if sl.poll() is not None:
-			sl = subprocess.Popen("sl", shell=True)
+#		if sl.poll() is not None:
+#			sl = subprocess.Popen("sl", shell=True)
 		parsed = line_re.match(line)
 		if not parsed:
 			continue
@@ -96,7 +96,8 @@ try:
 	input.close()
 	output.close()
 except:
-	sl.wait()
 	raise
-sl.wait()
+#	sl.wait()
+#	raise
+# sl.wait()
 
