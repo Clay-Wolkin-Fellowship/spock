@@ -3,9 +3,10 @@ CONFIGS  = sample l1 bucket
 include $(CONFIGS:%=conf/%.config)
 
 # Definitions
-COMMA    = ,
-EMPTY    =
-SPACE    = $(EMPTY) $(EMPTY)
+COMMA	= ,
+PERIOD	= .
+EMPTY   =
+SPACE   = $(EMPTY) $(EMPTY)
 
 # Related to config sizes
 SAMPK  := $(shell dc --expression="$(WARM) $(SAMP) $(COOL) + + p")
@@ -14,41 +15,45 @@ BSIZE  := $(shell dc --expression="$(SAMP) $(BUCKETS) / p")
 ZBSIZE := $(shell dc --expression="$(ZOOMED) $(BUCKETS) / p")
 
 # Trace to use
-TRACES  = sp_omp # $(patsubst raw/%.mtrace,%,$(wildcard raw/*.mtrace))
+SRC	= /proj/spock
+TRACES  = # $(patsubst raw/%.mtrace,%,$(wildcard raw/*.mtrace))
 ifeq ($(strip $(TRACES)),)
-	TRACES = $(patsubst zip/%.zmtrace,%,$(wildcard zip/*.zmtrace))
+TRACES	= sp_omp # $(patsubst zip/%.zmtrace,%,$(wildcard zip/*.zmtrace))
+RAW     = $(SRC)/raw/$(TRACE).mtrace
+ZIP     = $(SRC)/zip/$(TRACE).zmtrace
+RTRACES = $(TRACES:%=$(SRC)/raw/%.mtrace)
+ZTRACES = $(TRACES:%=$(SRC)/zip/%.zmtrace)
+else
+RAW     = $(SRC)/raw/$(TRACE).mtrace
+ZIP     = zip/$(TRACE).zmtrace
+RTRACES = $(TRACES:%=$(SRC)/raw/%.mtrace)
+ZTRACES = $(TRACES:%=zip/%.zmtrace)
 endif
+
 REPS    = fifo belady rand lru nru_rand mru brrip drrip srrip
 
-RTRACES = $(TRACES:%=raw/%.mtrace)
-ZTRACES = $(TRACES:%=zip/%.zmtrace)
 ZAMPLES = $(TRACES:%=build/zamp/%.zmtrace)
 SAMPLES = $(TRACES:%=build/samp/%.mtrace)
-L1CACHE = $(foreach rep,$(REPS),$(TRACES:%=build/l1/%.$(rep)))
-L1MATRS = $(foreach rep,$(REPS),$(TRACES:%=build/matr1/%.$(rep)))
-L1MATRC = $(foreach rep,$(REPS),$(TRACES:%=build/matrc1/%.$(rep)))
-L1MATRB = $(foreach rep,$(REPS),$(TRACES:%=build/matrb1/%.$(rep)))
-L1MATRZ = $(foreach rep,$(REPS),$(TRACES:%=build/matrz1/%.$(rep)))
-L1BPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/plotmb1/%.$(rep).png))
-L1CPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/plotmc1/%.$(rep).png))
-L1ZPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/plotmz1/%.$(rep).png))
-L1LPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/plotml1/%.$(rep).png))
+L1CACHE = $(foreach rep,$(REPS),$(TRACES:%=build/l1/cache/%.$(rep)))
+L1MATRS = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/src/%.$(rep)))
+L1MATRC = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/cum/%.$(rep)))
+L1MATRB = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/buc/%.$(rep)))
+L1MATRZ = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/zom/%.$(rep)))
+L1BPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/buc/%.$(rep).png))
+L1CPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/cum/%.$(rep).png))
+L1ZPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/zom/%.$(rep).png))
+L1LPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/log/%.$(rep).png))
 L1PLOTS = $(L1BPLOT) $(L1CPLOT) $(L1ZPLOT) $(L1LPLOT)
 
 TRACE   = $(basename $(basename $(@F)))
 REPL	= $(patsubst .%,%,$(suffix $(@F)))
-RAW     = raw/$(TRACE).mtrace
-ZIP     = zip/$(TRACE).zmtrace
 ZAMPLE  = build/zamp/$(TRACE).zmtrace
 SAMPLE  = build/samp/$(TRACE).mtrace
-L1	= build/l1/$(@F)
-L1MATR  = build/matr1/$(@F)
-L1CUM   = build/matrc1/$(basename $(@F))
-L1BUC	= build/matrb1/$(basename $(@F))
-L1ZBUC	= build/matrz1/$(basename $(@F))
-L1CBEL  = build/matrc1/$(TRACE).belady
-L1BBEL  = build/matrb1/$(TRACE).belady
-L1ZBEL  = build/matrz1/$(TRACE).belady
+L1	= build/l1/cache/$(@F)
+L1MATR  = build/l1/matr/src/$(@F)
+L1CUM   = build/l1/matr/cum/$(basename $(@F))
+L1BUC	= build/l1/matr/buc/$(basename $(@F))
+L1ZBUC	= build/l1/matr/zom/$(basename $(@F))
 
 .SECONDEXPANSION:
 .SECONDARY:
