@@ -30,7 +30,7 @@ RTRACES = $(TRACES:%=$(SRC)/raw/%.mtrace)
 ZTRACES = $(TRACES:%=zip/%.zmtrace)
 endif
 
-REPS    = fifo belady rand lru nru_rand mru brrip drrip srrip
+REPS    = fifo belady rand lru nru_rand mru brrip drrip srrip # $(patsubst rep/%.py,%,$(wildcard rep/*.py))
 
 ZAMPLES = $(TRACES:%=build/zamp/%.zmtrace)
 SAMPLES = $(TRACES:%=build/samp/%.mtrace)
