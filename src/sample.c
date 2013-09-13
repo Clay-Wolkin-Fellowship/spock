@@ -48,7 +48,7 @@ main(int argc, char *argv[])
 		start = random() % (L - K + 1);
 		fseek(input, start * LINE_LENGTH, SEEK_SET);
 		fread(buf, LINE_LENGTH, K, input);
-		fwrite(buf, LINE_LENGTH, L, stdout);
+		fwrite(buf, LINE_LENGTH, K, stdout);
 	}
 	return 0;
 }

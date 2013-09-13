@@ -1,5 +1,5 @@
 # Configurations
-CONFIGS  = sample l1 bucket
+CONFIGS  = sample l1 bucket time
 include $(CONFIGS:%=conf/%.config)
 
 # Definitions
@@ -10,7 +10,7 @@ SPACE   = $(EMPTY) $(EMPTY)
 
 # Related to config sizes
 SAMPK  := $(shell dc --expression="$(WARM) $(SAMP) $(COOL) + + p")
-L1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
+l1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
 BSIZE  := $(shell dc --expression="$(SAMP) $(BUCKETS) / p")
 ZBSIZE := $(shell dc --expression="$(ZOOMED) $(BUCKETS) / p")
 
@@ -30,35 +30,51 @@ RTRACES = $(TRACES:%=$(SRC)/raw/%.mtrace)
 ZTRACES = $(TRACES:%=zip/%.zmtrace)
 endif
 
-REPS    = fifo belady rand lru nru_rand mru brrip drrip srrip # $(patsubst rep/%.py,%,$(wildcard rep/*.py))
+REPS    = fifo belady # rand lru nru_rand mru brrip drrip srrip # $(patsubst rep/%.py,%,$(wildcard rep/*.py))
+TTRS    = matr mmtr wttr
+LXS	= l1
+PLTS    = cum
+
+REPTR	= $(foreach trace,$(TRACES),$(REPS:%=$(trace).%))
+LXT	= $(foreach lx,$(LXS),$(TTRS:%=$(lx)/%))
+LXTPL	= $(foreach lxt,$(LXT),$(PLTS:%=$(lxt)/%))
 
 ZAMPLES = $(TRACES:%=build/zamp/%.zmtrace)
 SAMPLES = $(TRACES:%=build/samp/%.mtrace)
-L1CACHE = $(foreach rep,$(REPS),$(TRACES:%=build/l1/cache/%.$(rep)))
-L1MATRS = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/src/%.$(rep)))
-L1MATRC = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/cum/%.$(rep)))
-L1MATRB = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/buc/%.$(rep)))
-L1MATRZ = $(foreach rep,$(REPS),$(TRACES:%=build/l1/matr/zom/%.$(rep)))
-L1BPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/buc/%.$(rep).png))
-L1CPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/cum/%.$(rep).png))
-L1ZPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/zom/%.$(rep).png))
-L1LPLOT = $(foreach rep,$(REPS),$(TRACES:%=build/l1/plot/log/%.$(rep).png))
-L1PLOTS = $(L1BPLOT) $(L1CPLOT) $(L1ZPLOT) $(L1LPLOT)
+WTIMES  = $(REPTR:%=build/time/%.time)
+LXCACHE = $(foreach lx,$(LXS),$(REPTR:%=build/$(lx)/cache/repl/%.repl))
+LXTS    = $(foreach lxt,$(LXT),$(REPTR:%=build/$(lxt)/src/%.ttr))
+LXPLDAT = $(foreach lxtpl,$(LXTPL),$(REPTR:%=build/$(lxtpl)/%.dat))
+LXPLPNG = $(foreach lxtpl,$(LXTPL),$(REPTR:%=build/$(lxtpl)/%.png))
 
 TRACE   = $(basename $(basename $(@F)))
-REPL	= $(patsubst .%,%,$(suffix $(@F)))
+REPL	= $(patsubst .%,%,$(suffix $(basename $(@F))))
+SANSPLOT= $(shell dirname $(@D))
+SANSTTR = $(shell dirname $(SANSPLOT))
+LX	= $(shell basename $(SANSTTR))
+TTR	= $(shell basename $(SANSPLOT))
+PLOT	= $(shell basename $(@D))
+
 ZAMPLE  = build/zamp/$(TRACE).zmtrace
 SAMPLE  = build/samp/$(TRACE).mtrace
-L1	= build/l1/cache/$(@F)
-L1MATR  = build/l1/matr/src/$(@F)
-L1CUM   = build/l1/matr/cum/$(basename $(@F))
-L1BUC	= build/l1/matr/buc/$(basename $(@F))
-L1ZBUC	= build/l1/matr/zom/$(basename $(@F))
+CACHE	= build/$(LX)/cache/repl/$(TRACE).$(REPL).repl
+WTIME	= build/time/$(TRACE).$(REPL).time
+LXTTR   = build/$(LX)/$(TTR)/src/$(TRACE).$(REPL).ttr
+LXDAT	= build/$(LX)/$(TTR)/$(PLOT)/$(TRACE).$(REPL).dat
+
+LXCONF	= conf/$(LX).config
+
+REPPROG	= rep/$(REPL).py
+WTPROG	= rep/walltime.py
+TTRPROG	= bin/$(TTR).py
+DATPROG = bin/$(PLOT).py
+
+PROGS   = $(patsubst src/%.c,%,$(wildcard src/*.c))
 
 .SECONDEXPANSION:
 .SECONDARY:
 
-all: $(L1PLOTS)
+all: $(LXPLPNG)
 
 clean:
 	rm -rf build
@@ -69,55 +85,31 @@ $(ZTRACES): $$(RAW) bin/zip.sh
 
 $(ZAMPLES): $$(ZIP) build/bin/sample conf/sample.config
 	@mkdir -p $(@D)
-	build/bin/sample $< $(SAMPN) $(SAMPK) >$@
+	build/bin/sample $(ZIP) $(SAMPN) $(SAMPK) >$@
 
 $(SAMPLES): $$(ZAMPLE) build/bin/uncompress
 	@mkdir -p $(@D)
-	build/bin/uncompress <$< >$@
+	build/bin/uncompress <$(ZAMPLE) >$@
 
-$(L1CACHE): $$(SAMPLE) rep/$$(REPL).py conf/l1.config
+$(LXCACHE): $$(SAMPLE) $$(REPPROG) $$(LXCONF)
 	@mkdir -p $(@D)
-	python3 rep/$(REPL).py $(L1ARGS) $(SAMPLE) $@
+	python3 $(REPPROG) $($(LX)ARGS) $(SAMPLE) $@
 
-$(L1MATRS): $$(L1) bin/matr.py conf/sample.config
+$(WTIMES): $(WTPROG) $$(SAMPLE) $(LXS:%=build/%/cache/repl/$$(TRACE).$$(REPL).repl) 
 	@mkdir -p $(@D)
-	bin/matr.py -w $(WARM) -s $(SAMP) -c $(COOL) $< $@
+	python3 $(WTPROG) $(DELAY:%=-d %) $(SAMPLE) $(LXS:%=build/%/cache/repl/$(TRACE).$(REPL).repl) >$@
 
-$(L1MATRC): $$(L1MATR) bin/cumstats.py
+$(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF)
 	@mkdir -p $(@D)
-	bin/cumstats.py <$< >$@
+	$(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
 
-$(L1MATRB): $$(L1MATR) bin/bucketstats.py conf/bucket.config
+$(LXPLDAT): $$(DATPROG) $$(LXTTR)
 	@mkdir -p $(@D)
-	bin/bucketstats.py <$< >$@ $(BSIZE)
+	$(DATPROG) <$(LXTTR) >$@
 
-$(L1MATRZ): $$(L1MATR) bin/bucketstats.py conf/bucket.config
+$(LXPLPNG): $(GPLOT) $$(LXDAT)
 	@mkdir -p $(@D)
-	bin/zoom.py <$< >$@ $(ZBSIZE) $(ZOOMED)
-
-PLOT = cat bin/simple.gplot | sed 's|OUTPUT|$@|' | sed 's|INPUT|$<|' | sed 's|TRACE|$(TRACE)|'
-LPLOT = cat bin/log.gplot | sed 's|OUTPUT|$@|' | sed 's|INPUT|$<|' | sed 's|TRACE|$(TRACE)|'
-LLPLOT = cat bin/loglog.gplot | sed 's|OUTPUT|$@|' | sed 's|INPUT|$<|' | sed 's|TRACE|$(TRACE)|'
-
-$(L1CPLOT): $$(L1CUM) $$(L1CBEL) bin/simple.gplot
-	@mkdir -p $(@D)
-	$(PLOT) | sed 's|TYPE|Cumulative sum|'| sed 's|BELADY|$(L1CBEL)|' | gnuplot -persist
-
-$(L1BPLOT): $$(L1BUC) $$(L1BBEL) bin/simple.gplot
-	@mkdir -p $(@D)
-	$(PLOT) | sed 's|TYPE|Bucket plot|' | sed 's|BELADY|$(L1BBEL)|' | gnuplot -persist
-
-$(L1LPLOT): $$(L1BUC) $$(L1BBEL) bin/loglog.gplot
-	@mkdir -p $(@D)
-	$(LLPLOT) | sed 's|TYPE|Bucket plot|' | sed 's|BELADY|$(L1BBEL)|' | gnuplot -persist
-
-$(L1ZPLOT): $$(L1ZBUC) $$(L1ZBEL) bin/log.gplot
-	@mkdir -p $(@D)
-	$(LPLOT) | sed 's|TYPE|Zoomed in bucket plot|' | sed 's|BELADY|$(L1ZBEL)|' | gnuplot -persist
-
-bin/zip.sh: build/bin/compress
-
-PROGS   = $(patsubst src/%.c,%,$(wildcard src/*.c))
+	bin/plot.sh $(LXDAT) $@
 
 progs: $(PROGS:%=build/bin/%)
 
@@ -128,5 +120,4 @@ build/obj/%.o: src/%.c
 build/bin/%: build/obj/%.o
 	@mkdir -p $(@D)
 	gcc -O3 -o $@ $<
-
 
