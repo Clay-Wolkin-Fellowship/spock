@@ -4,7 +4,6 @@ include $(CONFIGS:%=conf/%.config)
 
 # Related to config sizes
 SAMPK  := $(shell dc --expression="$(WARM) $(SAMP) $(COOL) + + p")
-l1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
 
 # Trace to use
 SRC	= /proj/spock
@@ -31,6 +30,8 @@ PLTS    = $(patsubst bin/plts/%.py,%,$(wildcard bin/plts/*.py))
 
 include $(LXS:%=conf/lx/%.config)
 include $(PLTS:%=conf/plts/%.config)
+
+l1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
 
 REPTR	= $(foreach trace,$(TRACES),$(REPS:%=$(trace).%))
 LXT	= $(foreach lx,$(LXS),$(TTRS:%=$(lx)/%))
@@ -104,11 +105,11 @@ $(WTIMES): $(WTPROG) $$(SAMPLE) $(LXS:%=build/%/cache/repl/$$(TRACE).$$(REPL).re
 
 $(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF)
 	@mkdir -p $(@D)
-	$(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
+	python3 $(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
 
 $(LXPLDAT): $$(DATPROG) $$(DATCONF) $$(LXTTR)
 	@mkdir -p $(@D)
-	$(DATPROG) $($(PLOT)ARGS) <$(LXTTR) >$@
+	python3 $(DATPROG) $($(PLOT)ARGS) <$(LXTTR) >$@
 
 $(LXPLPNG): $(PLOTPROG) $$(LXDAT)
 	@mkdir -p $(@D)

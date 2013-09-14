@@ -1,4 +1,5 @@
 #!/bin/env python3
+import os
 import sys
 import subprocess
 
@@ -20,9 +21,9 @@ title  = sys.argv[1]
 output = sys.argv[2]
 inputs = sys.argv[3:]
 
-plots = ", ".join(plot % (input, os.path.basename(input).split('.',1)[0])
+plots = ", ".join(plot % (input, os.path.basename(input).split('.',1)[0]) for input in inputs)
 gnuplot = gnuplot % (title, output, inputs)
 
 proc = subprocess.Popen(["gnuplot","-persist"],stdin=subprocess.PIPE)
-proc.communicate(gnuplot)
+proc.communicate(gnuplot.encode('utf-8'))
 
