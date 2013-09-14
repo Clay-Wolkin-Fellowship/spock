@@ -1,12 +1,10 @@
 # Configurations
-CONFIGS  = sample l1 bucket time
+CONFIGS  = sample time
 include $(CONFIGS:%=conf/%.config)
 
 # Related to config sizes
 SAMPK  := $(shell dc --expression="$(WARM) $(SAMP) $(COOL) + + p")
 l1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
-BSIZE  := $(shell dc --expression="$(SAMP) $(BUCKETS) / p")
-ZBSIZE := $(shell dc --expression="$(ZOOMED) $(BUCKETS) / p")
 
 # Trace to use
 SRC	= /proj/spock
@@ -26,10 +24,13 @@ ZTRACES = $(TRACES:%=zip/%.zmtrace)
 $(ZTRACES): $$(RAW) bin/zip.sh
 endif
 
-REPS    = fifo belady # rand lru nru_rand mru brrip drrip srrip # $(patsubst rep/%.py,%,$(wildcard rep/*.py))
-TTRS    = matr mmtr wttr
+REPS    = $(patsubst rep/%.py,%,$(wildcard rep/*.py))
+TTRS    = $(patsubst bin/ttrs/%.py,%,$(wildcard bin/ttrs/*.py))
 LXS	= l1
-PLTS    = cum
+PLTS    = $(patsubst bin/plts/%.py,%,$(wildcard bin/plts/*.py))
+
+include $(LXS:%=conf/lx/%.config)
+include $(PLTS:%=conf/plts/%.config)
 
 REPTR	= $(foreach trace,$(TRACES),$(REPS:%=$(trace).%))
 LXT	= $(foreach lx,$(LXS),$(TTRS:%=$(lx)/%))
@@ -59,12 +60,13 @@ WTIME	= build/time/$(TRACE).$(REPL).time
 LXTTR   = build/$(LX)/$(TTR)/src/$(TRACE).$(REPL).ttr
 LXDAT	= $(REPLIST:%=build/$(LX)/$(TTR)/$(PLOT)/$(TRACE).%.dat)
 
-LXCONF	= conf/$(LX).config
+LXCONF	= conf/lx/$(LX).config
+DATCONF	= conf/plts/$(PLOT).config
 
 REPPROG	= rep/$(REPL).py
 WTPROG	= rep/walltime.py
-TTRPROG	= bin/$(TTR).py
-DATPROG = bin/$(PLOT).py
+TTRPROG	= bin/ttrs/$(TTR).py
+DATPROG = bin/plts/$(PLOT).py
 PLOTPROG= bin/plot.py
 
 PROGS   = $(patsubst src/%.c,%,$(wildcard src/*.c))
@@ -104,9 +106,9 @@ $(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF)
 	@mkdir -p $(@D)
 	$(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
 
-$(LXPLDAT): $$(DATPROG) $$(LXTTR)
+$(LXPLDAT): $$(DATPROG) $$(DATCONF) $$(LXTTR)
 	@mkdir -p $(@D)
-	$(DATPROG) <$(LXTTR) >$@
+	$(DATPROG) $($(PLOT)ARGS) <$(LXTTR) >$@
 
 $(LXPLPNG): $(PLOTPROG) $$(LXDAT)
 	@mkdir -p $(@D)

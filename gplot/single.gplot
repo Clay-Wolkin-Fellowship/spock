@@ -1,8 +1,0 @@
-set key outside
-set xlabel "Time to recache"
-set ylabel "Number of replacements"
-set autoscale
-set terminal png
-set datafile separator ","
-set output "OUTPUT"
-plot "INPUT" using 1:2 with lines title ""
