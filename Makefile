@@ -2,12 +2,6 @@
 CONFIGS  = sample l1 bucket time
 include $(CONFIGS:%=conf/%.config)
 
-# Definitions
-COMMA	= ,
-PERIOD	= .
-EMPTY   =
-SPACE   = $(EMPTY) $(EMPTY)
-
 # Related to config sizes
 SAMPK  := $(shell dc --expression="$(WARM) $(SAMP) $(COOL) + + p")
 l1ARGS := -o $(L1OFF) -i $(L1IDX) -w $(L1WAY)
@@ -28,6 +22,8 @@ RAW     = $(SRC)/raw/$(TRACE).mtrace
 ZIP     = zip/$(TRACE).zmtrace
 RTRACES = $(TRACES:%=$(SRC)/raw/%.mtrace)
 ZTRACES = $(TRACES:%=zip/%.zmtrace)
+
+$(ZTRACES): $$(RAW) bin/zip.sh
 endif
 
 REPS    = fifo belady # rand lru nru_rand mru brrip drrip srrip # $(patsubst rep/%.py,%,$(wildcard rep/*.py))
@@ -45,10 +41,11 @@ WTIMES  = $(REPTR:%=build/time/%.time)
 LXCACHE = $(foreach lx,$(LXS),$(REPTR:%=build/$(lx)/cache/repl/%.repl))
 LXTS    = $(foreach lxt,$(LXT),$(REPTR:%=build/$(lxt)/src/%.ttr))
 LXPLDAT = $(foreach lxtpl,$(LXTPL),$(REPTR:%=build/$(lxtpl)/%.dat))
-LXPLPNG = $(foreach lxtpl,$(LXTPL),$(REPTR:%=build/$(lxtpl)/%.png))
+LXPLPNG = $(foreach lxtpl,$(LXTPL),$(TRACES:%=build/$(lxtpl)/%.%.png))
 
 TRACE   = $(basename $(basename $(@F)))
 REPL	= $(patsubst .%,%,$(suffix $(basename $(@F))))
+REPLIST	= $(subst -, ,$*)
 SANSPLOT= $(shell dirname $(@D))
 SANSTTR = $(shell dirname $(SANSPLOT))
 LX	= $(shell basename $(SANSTTR))
@@ -60,7 +57,7 @@ SAMPLE  = build/samp/$(TRACE).mtrace
 CACHE	= build/$(LX)/cache/repl/$(TRACE).$(REPL).repl
 WTIME	= build/time/$(TRACE).$(REPL).time
 LXTTR   = build/$(LX)/$(TTR)/src/$(TRACE).$(REPL).ttr
-LXDAT	= build/$(LX)/$(TTR)/$(PLOT)/$(TRACE).$(REPL).dat
+LXDAT	= $(REPLIST:%=build/$(LX)/$(TTR)/$(PLOT)/$(TRACE).%.dat)
 
 LXCONF	= conf/$(LX).config
 
@@ -68,18 +65,22 @@ REPPROG	= rep/$(REPL).py
 WTPROG	= rep/walltime.py
 TTRPROG	= bin/$(TTR).py
 DATPROG = bin/$(PLOT).py
+PLOTPROG= bin/plot.py
 
 PROGS   = $(patsubst src/%.c,%,$(wildcard src/*.c))
+
+OUTPUT  = belady-fifo
+OUTPUTS = $(foreach lxtpl,$(LXTPL),$(foreach trace,$(TRACES),$(OUTPUT:%=build/$(lxtpl)/$(trace).%.png)))
 
 .SECONDEXPANSION:
 .SECONDARY:
 
-all: $(LXPLPNG)
+all: $(OUTPUTS)
 
 clean:
 	rm -rf build
 
-$(ZTRACES): $$(RAW) bin/zip.sh
+$(ZTRACES):
 	@mkdir -p $(@D)
 	bin/zip.sh $(TRACE)
 
@@ -107,9 +108,9 @@ $(LXPLDAT): $$(DATPROG) $$(LXTTR)
 	@mkdir -p $(@D)
 	$(DATPROG) <$(LXTTR) >$@
 
-$(LXPLPNG): $(GPLOT) $$(LXDAT)
+$(LXPLPNG): $(PLOTPROG) $$(LXDAT)
 	@mkdir -p $(@D)
-	bin/plot.sh $(LXDAT) $@
+	python3 $(PLOTPROG) "$(PLOT) $(TTR)" $@ $(LXDAT)
 
 progs: $(PROGS:%=build/bin/%)
 
