@@ -16,13 +16,16 @@ plot %s
 '''
 
 plot = '"%s" using 1:2 with lines title "%s"'
+stddev = ', "%s" using 1:2:3 with yerrorbars title "STDEV"'
 
 title  = sys.argv[1]
 output = sys.argv[2]
 inputs = sys.argv[3:]
 
 plots = ", ".join(plot % (input, os.path.basename(input).split('.',1)[0]) for input in inputs)
-gnuplot = gnuplot % (title, output, inputs)
+if len(inputs) == 1:
+	plots += stddev % inputs[0]
+gnuplot = gnuplot % (title, output, plots)
 
 proc = subprocess.Popen(["gnuplot","-persist"],stdin=subprocess.PIPE)
 proc.communicate(gnuplot.encode('utf-8'))

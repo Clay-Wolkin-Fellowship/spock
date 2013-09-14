@@ -72,7 +72,7 @@ PLOTPROG= bin/plot.py
 
 PROGS   = $(patsubst src/%.c,%,$(wildcard src/*.c))
 
-OUTPUT  = belady-fifo
+OUTPUT  = belady fifo srrip drrip brrip rand nru_rand belady-rand-srrip-drrip-brrip
 OUTPUTS = $(foreach lxtpl,$(LXTPL),$(foreach trace,$(TRACES),$(OUTPUT:%=build/$(lxtpl)/$(trace).%.png)))
 
 .SECONDEXPANSION:
