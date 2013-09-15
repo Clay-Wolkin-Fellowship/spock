@@ -65,7 +65,7 @@ LXCONF	= conf/lx/$(LX).config
 DATCONF	= conf/plts/$(PLOT).config
 
 REPPROG	= rep/$(REPL).py
-WTPROG	= rep/walltime.py
+WTPROG	= bin/walltime.py
 TTRPROG	= bin/ttrs/$(TTR).py
 DATPROG = bin/plts/$(PLOT).py
 PLOTPROG= bin/plot.py
@@ -103,7 +103,7 @@ $(WTIMES): $(WTPROG) $$(SAMPLE) $(LXS:%=build/%/cache/repl/$$(TRACE).$$(REPL).re
 	@mkdir -p $(@D)
 	python3 $(WTPROG) $(DELAY:%=-d %) $(SAMPLE) $(LXS:%=build/%/cache/repl/$(TRACE).$(REPL).repl) >$@
 
-$(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF)
+$(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF) $$(WTIME)
 	@mkdir -p $(@D)
 	python3 $(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
 
