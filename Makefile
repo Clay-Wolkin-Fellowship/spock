@@ -65,7 +65,7 @@ LXCONF	= conf/lx/$(LX).config
 DATCONF	= conf/plts/$(PLOT).config
 
 REPPROG	= rep/$(REPL).py
-WTPROG	= rep/walltime.py
+WTPROG	= bin/walltime.py
 TTRPROG	= bin/ttrs/$(TTR).py
 DATPROG = bin/plts/$(PLOT).py
 PLOTPROG= bin/plot.py
