@@ -25,7 +25,7 @@ for line in stdin:
 		else:
 			avg,std = avgdev(xs)
 			print("%d,%f,%f" % (center,avg,std))
-		current += bucketsize
+		current += ((num - current) // bucketsize + 1) * bucketsize
 		xs = [0 for x in xs]
 	xs = [sum(x) for x in zip(xs,nxs)]
 

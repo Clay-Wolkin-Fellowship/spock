@@ -13,6 +13,8 @@ set terminal png
 set datafile separator ","
 set output "%s"
 plot %s
+quit
+
 '''
 
 plot = '"%s" using 1:2 with lines title "%s"'
@@ -22,7 +24,7 @@ title  = sys.argv[1]
 output = sys.argv[2]
 inputs = sys.argv[3:]
 
-plots = ", ".join(plot % (input, os.path.basename(input).split('.',1)[0]) for input in inputs)
+plots = ", ".join(plot % (input, os.path.basename(input).split('.',2)[1]) for input in inputs)
 if len(inputs) == 1:
 	plots += stddev % inputs[0]
 gnuplot = gnuplot % (title, output, plots)

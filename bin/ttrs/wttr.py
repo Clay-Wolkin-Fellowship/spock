@@ -12,13 +12,14 @@ parser.add_option("-c","--cooldown",dest="cooldown",type=int)
 
 input  = args[0]
 output = args[1]
-wtime = args[2]
+wtime  = args[2]
 
 counts = []
 misses = []
 access = {}
 stage = "WARMUP"
 snum = 0
+mwttr = 0
 
 line_re = re.compile(r'(?P<sym>\S*)\s(?P<line>\S*)\s(?P<addr>\S*):(?P<offset>[^:]*)(?:\s(?P<victim>\S*))')
 
@@ -43,6 +44,7 @@ with open(input,"r") as input:
 		if victim:
 			if addr in access:
 				ttr = i - access[addr]
+				mwttr = max(mwttr, ttr)
 				counts[-1][ttr] = counts[-1].get(ttr,0) + 1
 			elif stage == "SAMPLE":
 				misses[-1] += 1
@@ -58,7 +60,7 @@ with open(input,"r") as input:
 			snum = 0
 			stage = "WARMUP"
 
-sumcounts = ((i,[c.get(i,0) for c in counts]) for i in range(opts.cooldown) if any(i in c for c in counts))
+sumcounts = ((i,[c.get(i,0) for c in counts]) for i in sorted(set(i for c in counts for i in c.keys())))
 
 with open(output,"w") as output:
 	print("total: %s" % " ".join(str(m) for m in misses),file=output)

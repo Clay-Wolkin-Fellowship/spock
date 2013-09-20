@@ -57,6 +57,7 @@ PLOT	= $(shell basename $(@D))
 ZAMPLE  = build/zamp/$(TRACE).zmtrace
 SAMPLE  = build/samp/$(TRACE).mtrace
 CACHE	= build/$(LX)/cache/repl/$(TRACE).$(REPL).repl
+CACHEX	= $(LXS:%=build/%/cache/repl/$(TRACE).$(REPL).repl)
 WTIME	= build/time/$(TRACE).$(REPL).time
 LXTTR   = build/$(LX)/$(TTR)/src/$(TRACE).$(REPL).ttr
 LXDAT	= $(REPLIST:%=build/$(LX)/$(TTR)/$(PLOT)/$(TRACE).%.dat)
@@ -76,7 +77,6 @@ OUTPUT  = belady fifo srrip drrip brrip rand nru_rand belady-rand-srrip-drrip-br
 OUTPUTS = $(foreach lxtpl,$(LXTPL),$(foreach trace,$(TRACES),$(OUTPUT:%=build/$(lxtpl)/$(trace).%.png)))
 
 .SECONDEXPANSION:
-.SECONDARY:
 
 all: $(OUTPUTS)
 
@@ -86,42 +86,52 @@ clean:
 $(ZTRACES):
 	@mkdir -p $(@D)
 	bin/zip.sh $(TRACE)
+	@echo "Created $@"
 
-$(ZAMPLES): $$(ZIP) build/bin/sample conf/sample.config
+$(ZAMPLES): build/bin/sample conf/sample.config $$(ZIP)
 	@mkdir -p $(@D)
 	build/bin/sample $(ZIP) $(SAMPN) $(SAMPK) >$@
+	@echo "Created $@"
 
-$(SAMPLES): $$(ZAMPLE) build/bin/uncompress
+$(SAMPLES): build/bin/uncompress $$(ZAMPLE)
 	@mkdir -p $(@D)
 	build/bin/uncompress <$(ZAMPLE) >$@
+	@echo "Created $@"
 
-$(LXCACHE): $$(SAMPLE) $$(REPPROG) $$(LXCONF)
+$(LXCACHE): $$(REPPROG) $$(LXCONF) $$(SAMPLE)
 	@mkdir -p $(@D)
 	python3 $(REPPROG) $($(LX)ARGS) $(SAMPLE) $@
+	@echo "Created $@"
 
-$(WTIMES): $(WTPROG) $$(SAMPLE) $(LXS:%=build/%/cache/repl/$$(TRACE).$$(REPL).repl) 
+$(WTIMES): $(WTPROG) $$(SAMPLE) $$(CACHEX)
 	@mkdir -p $(@D)
-	python3 $(WTPROG) $(DELAY:%=-d %) $(SAMPLE) $(LXS:%=build/%/cache/repl/$(TRACE).$(REPL).repl) >$@
+	python3 $(WTPROG) $(DELAY:%=-d %) $(SAMPLE) $(CACHEX) >$@
+	@echo "Created $@"
 
-$(LXTS): $$(CACHE) $$(TTRPROG) $$(LXCONF) $$(WTIME)
+$(LXTS): $$(TTRPROG) $$(LXCONF) $$(CACHE) $$(WTIME)
 	@mkdir -p $(@D)
-	python3 $(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $< $@ $(WTIME)
+	python3 $(TTRPROG) -w $(WARM) -s $(SAMP) -c $(COOL) $(CACHE) $@ $(WTIME)
+	@echo "Created $@"
 
 $(LXPLDAT): $$(DATPROG) $$(DATCONF) $$(LXTTR)
 	@mkdir -p $(@D)
 	python3 $(DATPROG) $($(PLOT)ARGS) <$(LXTTR) >$@
+	@echo "Created $@"
 
 $(LXPLPNG): $(PLOTPROG) $$(LXDAT)
 	@mkdir -p $(@D)
 	python3 $(PLOTPROG) "$(PLOT) $(TTR)" $@ $(LXDAT)
+	@echo "Created $@"
 
 progs: $(PROGS:%=build/bin/%)
 
 build/obj/%.o: src/%.c
 	@mkdir -p $(@D)
 	gcc -c -O3 -o $@ $<
+	@echo "Created $@"
 
 build/bin/%: build/obj/%.o
 	@mkdir -p $(@D)
 	gcc -O3 -o $@ $<
+	@echo "Created $@"
 
